@@ -80,6 +80,23 @@ void check_calibration() {
   }
 }
 
+void perform_tare() {
+  Serial.println(F("Starting tare..."));
+  _bno.tareRotationVectorNow();
+  delay(5000);
+  Serial.println(F("Persisting tare..."));
+  _bno.persistTare();
+  Serial.println(F("done!"));
+}
+
+
+void reset_sensor() {
+  Serial.print(F("Resetting..."));
+  _bno.softReset();
+  delay(3000);
+  Serial.println(F("done!"));
+}
+
 bool save_calibration() {
   Serial.println(F("Saving calibration..."));
   // save the dynamic calibration data (DCD) to the sensor's flash
@@ -90,7 +107,6 @@ bool save_calibration() {
     if (_bno.dataAvailable()) {
       if (_bno.calibrationSaved()) {
         Serial.println(F("Calibration saved!"));
-        _bno.endCalibration();
         return true;
       }
     }
@@ -253,6 +269,12 @@ void loop() {
         break;
       case 'c':
         check_calibration();
+        break;
+      case 't':
+        perform_tare();
+        break;
+      case 'r':
+        reset_sensor();
         break;
       default:
         //Serial.print(F("huh?! "));
