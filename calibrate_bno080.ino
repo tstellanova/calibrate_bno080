@@ -13,27 +13,37 @@
 
 BNO080 _bno;
 
-//declare reset function at address 0
-void(* resetFunc) (void) = 0;
+
 
 void setup() {
   Serial.begin(9600);
   Serial.println();
-  Serial.println("Calibration Tool");
 
   Wire.begin();
   // for i2c comms with bno080 we want 400 kHz clock
   Wire.setClock(400000);
 
-  _bno.begin();
+  digitalWrite(PIN_RESET, HIGH);
+  delay(200);
+  pinMode(PIN_RESET, OUTPUT);
 
-  Serial.println(F(" Calibration commands: "));
+  while (!_bno.begin(0x4a)) {
+    Serial.println(F("No bno080..."));
+    delay(1000);
+  }
+
+  delay(1000);
+  print_usage();
+
+}
+
+void print_usage() {
+  Serial.println(F("Calibration Tool commands: "));
   Serial.println(F(" 'm' for mag calibration "));
   Serial.println(F(" 'l' for accel calibration "));
   Serial.println(F(" 'g' for gyro calibration "));
   Serial.println(F(" 'p' for planar accel calibration "));
-//  Serial.println(F(" 'a' for calibration  all "));
-
+  Serial.println(F(" 'a' for calibrate all "));
 }
 
 bool save_calibration() {
@@ -64,7 +74,7 @@ bool calibrate_gyro() {
   _bno.enableGameRotationVector(100);
 
   //collect data while user leaves sensor still
-  delay(3000);
+  delay(1000);
   while (true) {
     if (_bno.dataAvailable()) {
       uint8_t status = _bno.getGyroAccuracy();
@@ -73,14 +83,13 @@ bool calibrate_gyro() {
       if (status >= 3) {
         return save_calibration();
       }
-      else {
-        Serial.println(F("Calibration failed, try again"));
-      }
-      break;
+    }
+    else {
+      Serial.println(F("waiting..."));
+      delay(1000);
     }
   }
 
-  return calibrate_gyro();
 }
 
 bool calibrate_planar_accel() {
@@ -91,23 +100,26 @@ bool calibrate_planar_accel() {
   _bno.enableGameRotationVector(100);
 
   //collect data while user moves the sensor
-  delay(3000);
+  delay(1000);
   while (true) {
     if (_bno.dataAvailable()) {
       uint8_t status = _bno.getAccelAccuracy();
       Serial.print(F("accel status: "));
       Serial.println(status);
-      if (status >= 3) {
+      //planar accel never seems to reach 3 (dimensionality?)
+      if (status >= 2) {
         return save_calibration();
       }
       else {
-        Serial.println(F("Calibration failed, try again"));
+        delay(1000);
       }
-      break;
+    }
+    else {
+      Serial.println(F("waiting..."));
+      delay(1000);
     }
   }
 
-  return calibrate_planar_accel();
 }
 
 bool calibrate_accel() {
@@ -117,18 +129,13 @@ bool calibrate_accel() {
   _bno.enableGameRotationVector(100);
 
   Serial.println(F("Hold level with Z up "));
-  delay(2500);
   Serial.println(F("Hold level with Z down "));
-  delay(2500);
   Serial.println(F("Hold level with Y up "));
-  delay(2500);
   Serial.println(F("Hold level with Y down "));
-  delay(2500);
   Serial.println(F("Hold level with X down "));
-  delay(2500);
   Serial.println(F("Hold level with X up "));
-  delay(2500);
 
+  delay(1000);
   while (true) {
     if (_bno.dataAvailable()) {
       uint8_t status = _bno.getAccelAccuracy();
@@ -138,13 +145,15 @@ bool calibrate_accel() {
         return save_calibration();
       }
       else {
-        Serial.println(F("Calibration failed, try again"));
+        delay(1000);
       }
-      break;
+    }
+    else {
+      Serial.println(F("waiting..."));
+      delay(1000);
     }
   }
 
-  return calibrate_accel();
 }
 
 bool calibrate_mag() {
@@ -171,13 +180,15 @@ bool calibrate_mag() {
         return save_calibration();
       }
       else {
-        Serial.println(F("Calibration failed, try again"));
+        delay(1000);
       }
-      break;
+    }
+    else {
+      Serial.println(F("waiting..."));
+      delay(1000);
     }
   }
 
-  return calibrate_mag();
 }
 
 bool calibrate_all() {
@@ -209,11 +220,15 @@ void loop() {
       case -1:
         //no command available
         break;
+      default:
+        Serial.println(F("huh?!"));
+        break;
     }
+
     if (cal_performed) {
-      resetFunc();
+      print_usage();
     }
+
   }
 
 }
-
