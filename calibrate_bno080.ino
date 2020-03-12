@@ -39,6 +39,34 @@ void print_usage() {
   Serial.println(F(" 'p' for planar accel calibration "));
   Serial.println(F(" 'c' for check calibrations "));
   Serial.println(F(" 'a' for calibrate all "));
+  Serial.println(F(" 'r' for soft reset "));
+  Serial.println(F(" 'z' for rotation vector check"));
+}
+
+void check_rotation_vector() {
+  Serial.println(F("Polling Rotation Vector..."));
+  _bno.enableRotationVector(250);
+  delay(1000);
+  for (int i = 0; i < 5; i++) {
+    if (_bno.dataAvailable()) {
+      Serial.println(F("i, j, k, w : "));
+      Serial.print(_bno.getQuatI(), 6); // 2^(-14) is precision of Q14 quaternion values
+      Serial.print(F(", "));
+      Serial.print(_bno.getQuatJ(), 6);
+      Serial.print(F(", "));
+      Serial.print(_bno.getQuatK(), 6);
+      Serial.print(F(", "));
+      Serial.print(_bno.getQuatReal(), 6);
+      Serial.print(F(", "));
+      Serial.print(_bno.getQuatRadianAccuracy(), 6);
+      Serial.println();
+      delay(250);
+    }
+    else {
+      Serial.println(F("waiting..."));
+      delay(500);
+    }
+  }
 }
 
 void check_calibration() {
@@ -50,7 +78,7 @@ void check_calibration() {
   _bno.enableRotationVector(250);
 
   delay(1000);
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 5; i++) {
     if (_bno.dataAvailable()) {
       uint8_t accel_status = _bno.getAccelAccuracy();
       uint8_t gyro_status = _bno.getGyroAccuracy();
@@ -276,6 +304,10 @@ void loop() {
       case 'r':
         reset_sensor();
         break;
+      case 'z':
+        check_rotation_vector();
+        break;
+
       default:
         //Serial.print(F("huh?! "));
         //Serial.println(cmd);
